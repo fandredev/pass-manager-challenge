@@ -1,43 +1,57 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useFocusEffect } from '@react-navigation/native';
-
-import { SearchBar } from '../../components/SearchBar';
-import { LoginDataItem } from '../../components/LoginDataItem';
-
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useFocusEffect } from "@react-navigation/native";
+import React, { useCallback, useEffect, useState } from "react";
+import { Alert } from "react-native";
+import { LoginDataItem } from "../../components/LoginDataItem";
+import { SearchBar } from "../../components/SearchBar";
 import {
   Container,
-  LoginList,
   EmptyListContainer,
-  EmptyListMessage
-} from './styles';
+  EmptyListMessage,
+  LoginList,
+} from "./styles";
 
 interface LoginDataProps {
   id: string;
   title: string;
   email: string;
   password: string;
-};
+}
 
 type LoginListDataProps = LoginDataProps[];
 
 export function Home() {
-  // const [searchListData, setSearchListData] = useState<LoginListDataProps>([]);
-  // const [data, setData] = useState<LoginListDataProps>([]);
+  const [searchListData, setSearchListData] = useState<LoginListDataProps>([]);
+  const [data, setData] = useState<LoginListDataProps>([]);
+  const keyAsyncStoragePassManager = "@passmanager:logins";
 
   async function loadData() {
     // Get asyncStorage data, use setSearchListData and setData
+    try {
+      const value = await AsyncStorage.getItem(keyAsyncStoragePassManager);
+      if (value !== null) {
+        const parsedValue = value ? JSON.parse(value) : [];
+        setData(parsedValue);
+        setSearchListData(parsedValue);
+      }
+    } catch (error) {
+      console.log(error);
+      Alert.alert("Não foi possível pegar os valores.");
+    }
   }
   useEffect(() => {
     loadData();
   }, []);
 
-  useFocusEffect(useCallback(() => {
-    loadData();
-  }, []));
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [])
+  );
 
   function handleFilterLoginData(search: string) {
-    // Filter results inside data, save with setSearchListData
+    const filter = data.filter(({ title }) => title === search);
+    setSearchListData(filter);
   }
 
   return (
@@ -50,19 +64,21 @@ export function Home() {
       <LoginList
         keyExtractor={(item) => item.id}
         data={searchListData}
-        ListEmptyComponent={(
+        ListEmptyComponent={
           <EmptyListContainer>
             <EmptyListMessage>Nenhum item a ser mostrado</EmptyListMessage>
           </EmptyListContainer>
-        )}
+        }
         renderItem={({ item: loginData }) => {
-          return <LoginDataItem
-            title={loginData.title}
-            email={loginData.email}
-            password={loginData.password}
-          />
+          return (
+            <LoginDataItem
+              title={loginData.title}
+              email={loginData.email}
+              password={loginData.password}
+            />
+          );
         }}
       />
     </Container>
-  )
+  );
 }
